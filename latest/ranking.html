@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/vite.svg">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Rankings</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        body {
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        h1 {
+            color: white;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Top Scores</h1>
+    <div class="leaderboard-container">
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Name</th>
+                        <th>Score</th>
+                        <th>Level</th>
+                        <th>Time</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="scores-body">
+                    <!-- Scores will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+        <a href="index.html" class="util-button"
+            style="text-decoration: none; text-align: center; display: block; width: 100%;">Back to Game</a>
+    </div>
+
+    <script type="module">
+        import { r as renderLeaderboard } from './src/leaderboard.js';
+
+        // Render leaderboard on load
+        renderLeaderboard('scores-body');
+    </script>
+</body>
+
+</html>
