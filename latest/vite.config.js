@@ -1,8 +1,18 @@
 import { defineConfig } from 'vite'
+import { resolve } from 'path'
 
 export default defineConfig({
-  // No special config needed for this simple static app, but good to have
   server: {
-    host: true
-  }
+    host: true,
+    port: 8085
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        ranking: resolve(__dirname, 'ranking.html'),
+      },
+    },
+  },
 })
+

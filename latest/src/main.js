@@ -331,6 +331,9 @@ class Game {
         this.nextPieces = [];
         this.particles = [];
         this.fireworkEndTime = 0;
+
+        // Clearing animation state
+        this.clearingAnimations = [];
     }
 
     play() {
@@ -363,6 +366,10 @@ class Game {
         this.isPaused = false;
         this.particles = [];
         this.fireworkEndTime = 0;
+
+        this.fireworkEndTime = 0;
+
+        this.clearingAnimations = [];
 
         const pauseBtn = document.getElementById('pause-btn');
         if (pauseBtn) {
@@ -420,6 +427,10 @@ class Game {
         this.lastTime = now;
         this.totalTime += deltaTime;
 
+        // Update clearing animations (non-blocking)
+        this.updateClearingAnimations(deltaTime);
+
+        // Normal game loop
         this.time.elapsed = now - this.time.start;
         if (this.time.elapsed > this.time.level) {
             this.time.start = now;
@@ -430,6 +441,28 @@ class Game {
             this.draw();
             this.requestId = requestAnimationFrame(this.loop.bind(this));
         }
+    }
+
+    updateClearingAnimations(dt) {
+        this.clearingAnimations = this.clearingAnimations.filter(anim => anim.life > 0);
+        this.clearingAnimations.forEach(anim => {
+            anim.life -= dt;
+            // Spawn particles periodically
+            if (Math.random() > 0.8) {
+                anim.blocks.forEach((color, x) => {
+                    // Check if this specific block is not empty (cleared rows usually full but robust check)
+                    if (color !== 'none') {
+                        const cx = x * BLOCK_SIZE + BLOCK_SIZE / 2;
+                        const cy = anim.y * BLOCK_SIZE + BLOCK_SIZE / 2;
+
+                        // Note: We might want slightly more chaos here
+                        if (Math.random() > 0.8) {
+                            this.particles.push(new Particle(cx, cy, color, Math.random() * 2 + 1, 20));
+                        }
+                    }
+                });
+            }
+        });
     }
 
     drop() {
@@ -445,13 +478,81 @@ class Game {
                 return;
             }
 
-            this.clearLines();
-            this.piece = this.getNextPiece();
+            // check for clear check instead of immediate clear
+            this.checkAndStartClear();
+        }
+    }
 
+    checkAndStartClear() {
+        let lines = [];
+        this.board.grid.forEach((row, y) => {
+            if (row.every(value => value > 0)) {
+                lines.push(y);
+            }
+        });
+
+        if (lines.length > 0) {
+            // Snapshot for animation
+            lines.forEach(y => {
+                const rowColors = this.board.grid[y].map(val => COLORS[val]);
+                this.clearingAnimations.push({
+                    y: y, // This is the screen row index
+                    blocks: rowColors,
+                    life: 2000,
+                    maxLife: 2000
+                });
+
+                // Initial burst of particles
+                rowColors.forEach((color, x) => {
+                    const cx = x * BLOCK_SIZE + BLOCK_SIZE / 2;
+                    const cy = y * BLOCK_SIZE + BLOCK_SIZE / 2;
+                    for (let i = 0; i < 3; i++) {
+                        this.particles.push(new Particle(cx, cy, color, Math.random() * 5 + 2, 30));
+                    }
+                });
+            });
+
+            // IMMEDIATELY clear logical lines
+            this.finalizeClear(lines);
+
+        } else {
+            this.piece = this.getNextPiece();
             // Valid spawn?
             if (!this.board.valid(this.piece)) {
                 this.handleGameOver();
             }
+        }
+    }
+
+    finalizeClear(clearingRowsIndices) {
+        // clearingRowsIndices contains Y indices.
+        // Logic similar to before: create new grid without those rows.
+
+        let newGrid = this.board.grid.filter((row, index) => !clearingRowsIndices.includes(index));
+        // Add new empty rows at top
+        while (newGrid.length < ROWS) {
+            newGrid.unshift(Array(COLS).fill(0));
+        }
+        this.board.grid = newGrid;
+
+        // Score Logic
+        const lines = clearingRowsIndices.length;
+        const lineScores = [0, 40, 100, 300, 1200];
+        this.score += Number(lineScores[lines] * (this.level + 1));
+        this.lines += lines;
+
+        this.audio.clear();
+        this.checkLevel();
+        this.updateAccount();
+
+        // Firework Logic
+        const duration = 1000 + (lines - 1) * 1000;
+        this.fireworkEndTime = Date.now() + duration;
+
+        // Next piece IMMEDIATE
+        this.piece = this.getNextPiece();
+        if (!this.board.valid(this.piece)) {
+            this.handleGameOver();
         }
     }
 
@@ -471,48 +572,7 @@ class Game {
         }, 100);
     }
 
-    clearLines() {
-        let lines = 0;
-
-        this.board.grid.forEach((row, y) => {
-            // If every block is filled
-            if (row.every(value => value > 0)) {
-                lines++;
-
-                // Spawn Shatter Particles for this row
-                row.forEach((value, x) => {
-                    // Center of block
-                    const cx = x * BLOCK_SIZE + BLOCK_SIZE / 2;
-                    const cy = y * BLOCK_SIZE + BLOCK_SIZE / 2;
-                    const color = COLORS[value];
-
-                    for (let i = 0; i < 5; i++) {
-                        this.particles.push(new Particle(cx, cy, color, Math.random() * 5 + 2, 30));
-                    }
-                });
-
-                // Remove the row
-                this.board.grid.splice(y, 1);
-                this.board.grid.unshift(Array(COLS).fill(0));
-            }
-        });
-
-        if (lines > 0) {
-            // Scoring (original)
-            const lineScores = [0, 40, 100, 300, 1200];
-            this.score += Number(lineScores[lines] * (this.level + 1));
-            this.lines += lines;
-
-            this.audio.clear();
-            this.checkLevel();
-            this.updateAccount();
-
-            // Firework Logic
-            // 1 sec for 1 line, +1 sec for each additional
-            const duration = 1000 + (lines - 1) * 1000;
-            this.fireworkEndTime = Date.now() + duration;
-        }
-    }
+    // Original clearLines removed/replaced by checkAndStartClear + finalizeClear
 
     spawnFirework() {
         // Random position
@@ -602,6 +662,9 @@ class Game {
 
         this.board.draw();
 
+        // Draw Clearing Animations (Overlays) - Ghost blocks removed as per request
+        // We only show particles now (handled by drawEffects)
+
         // Ghost
         const ghost = this.getGhostPosition();
         if (ghost && ghost.y > this.piece.y) {
@@ -611,8 +674,6 @@ class Game {
         this.piece.draw();
 
         this.drawEffects();
-        // drawNext is called on spawn, but we can call it here if we want continuous animation? 
-        // No, standard tetris static next is fine. But we need to make sure it's drawn at least once.
     }
 
     drawEffects() {
@@ -775,11 +836,9 @@ class Game {
                     return;
                 }
 
-                this.clearLines();
-                this.piece = this.getNextPiece();
-                if (!this.board.valid(this.piece)) {
-                    this.handleGameOver();
-                }
+                // check clear instead of direct clear
+                this.checkAndStartClear();
+
             } else {
                 if (this.board.valid(p)) {
                     if (event.key === KEY.UP) this.audio.rotate();
