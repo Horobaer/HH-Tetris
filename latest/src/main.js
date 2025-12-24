@@ -988,8 +988,14 @@ if (mobMenuBtn) {
 
     const mobPlay = document.getElementById('mob-play-btn');
     if (mobPlay) mobPlay.addEventListener('click', () => {
-        game.play();
-        overlay.style.display = 'none';
+        const usernameInput = document.getElementById('username');
+        if (!usernameInput.value || usernameInput.value.startsWith('Player ')) {
+            overlay.style.display = 'none';
+            showNameDialog();
+        } else {
+            game.play();
+            overlay.style.display = 'none';
+        }
     });
 
     const mobPause = document.getElementById('mob-pause-btn');
@@ -999,9 +1005,14 @@ if (mobMenuBtn) {
 
     const mobRestart = document.getElementById('mob-restart-btn');
     if (mobRestart) mobRestart.addEventListener('click', () => {
-        if (confirm("Restart Game?")) {
-            game.play();
-            mobRestart.blur();
+        const usernameInput = document.getElementById('username');
+        if (!usernameInput.value || usernameInput.value.startsWith('Player ')) {
+            showNameDialog();
+        } else {
+            if (confirm("Restart Game?")) {
+                game.play();
+                mobRestart.blur();
+            }
         }
     });
 
@@ -1020,15 +1031,56 @@ if (mobMenuBtn) {
     }
 }
 
-// Name Sync
-const usernameInput = document.getElementById('username');
-if (usernameInput) {
-    usernameInput.value = `Player ${Date.now()}`;
-    const mobUser = document.getElementById('mob-username');
-    if (mobUser) {
-        mobUser.value = usernameInput.value;
-        mobUser.addEventListener('input', (e) => {
-            usernameInput.value = e.target.value;
-        });
-    }
+// Name Flow Functions
+function showNameDialog() {
+    const dialog = document.getElementById('name-dialog');
+    dialog.classList.remove('hidden');
+    document.getElementById('username').focus();
 }
+
+function hideNameDialog() {
+    const dialog = document.getElementById('name-dialog');
+    dialog.classList.add('hidden');
+}
+
+// Name Sync & Initialization
+const usernameInput = document.getElementById('username');
+const mobUser = document.getElementById('mob-username');
+const startGameBtn = document.getElementById('start-game-btn');
+
+// Load stored name
+const storedName = localStorage.getItem('tetris_username');
+if (storedName) {
+    if (usernameInput) usernameInput.value = storedName;
+    if (mobUser) mobUser.value = storedName;
+} else if (usernameInput) {
+    usernameInput.value = "";
+    if (mobUser) mobUser.value = "";
+}
+
+// Sync inputs
+if (usernameInput && mobUser) {
+    usernameInput.addEventListener('input', (e) => {
+        mobUser.value = e.target.value;
+        localStorage.setItem('tetris_username', e.target.value);
+    });
+    mobUser.addEventListener('input', (e) => {
+        usernameInput.value = e.target.value;
+        localStorage.setItem('tetris_username', e.target.value);
+    });
+}
+
+// Start Game from Dialog
+if (startGameBtn) {
+    startGameBtn.addEventListener('click', () => {
+        const name = usernameInput.value.trim();
+        if (name) {
+            localStorage.setItem('tetris_username', name);
+            hideNameDialog();
+            game.play();
+        } else {
+            alert("Please enter a name!");
+        }
+    });
+}
+

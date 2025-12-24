@@ -127,7 +127,8 @@ body {
     align-items: center;
 }
 
-.menu-content {
+.menu-content,
+.dialog-content {
     background: var(--md-sys-color-surface);
     padding: 2.5rem;
     border-radius: 28px;
@@ -140,7 +141,8 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
-.menu-content h2 {
+.menu-content h2,
+.dialog-content h2 {
     margin-top: 0;
     font-weight: 500;
     color: var(--md-sys-color-primary);
@@ -213,10 +215,92 @@ body {
     cursor: pointer;
     text-decoration: none;
     transition: background 0.2s;
+    display: block;
+    text-align: center;
 }
 
 .util-button:hover {
     background: rgba(202, 196, 208, 0.1);
+}
+
+
+/* MD3 Text Field Styling */
+.md-textfield {
+    position: relative;
+    margin-top: 1.5rem;
+    width: 100%;
+}
+
+.md-input {
+    width: 100%;
+    background: var(--md-sys-color-surface-variant);
+    border: none;
+    border-bottom: 2px solid var(--md-sys-color-outline);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    padding: 24px 16px 8px 16px;
+    font-size: 1rem;
+    color: var(--md-sys-color-on-surface);
+    box-sizing: border-box;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.md-label {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    color: var(--md-sys-color-on-surface-variant);
+    transition: 0.2s ease all;
+    pointer-events: none;
+    font-size: 1rem;
+}
+
+.md-input:focus~.md-label,
+.md-input:not(:placeholder-shown)~.md-label {
+    top: 8px;
+    font-size: 0.75rem;
+    color: var(--md-sys-color-primary);
+}
+
+.md-input:focus {
+    outline: none;
+    background: rgba(208, 188, 255, 0.1);
+    border-bottom-color: var(--md-sys-color-primary);
+}
+
+.md-line {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--md-sys-color-primary);
+    transition: 0.3s ease all;
+}
+
+.md-input:focus~.md-line {
+    width: 100%;
+    left: 0;
+}
+
+#name-dialog {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1100;
+    /* Higher than menu */
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
+}
+
+#name-dialog p {
+    color: var(--md-sys-color-on-surface-variant);
+    margin-bottom: 1rem;
 }
 
 .hidden {
